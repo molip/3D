@@ -2,11 +2,11 @@ wall = 0.5;
 base = 1;
 inner = [31.5, 22.3, 60];
 lid_angle = 15;
-lid_gap = 0;
+lid_gap = 5;
 lid_height = 8; // Outer height from top, x=0
 
 outer = [inner.x + wall * 2, inner.y + wall * 2, inner.z + base * 2];
-lid_height_delta = sin(lid_angle) * outer.x;
+lid_height_delta = sin(lid_angle) * outer.y;
 
 module outline() 
 {
@@ -25,7 +25,7 @@ module clip(height)
 {
 	s = [outer.x * 2, outer.y * 2, lid_height_delta * 2];
 	translate([0, 0, height])
-	rotate([0, lid_angle, 0])
+	rotate([lid_angle, 0, 0])
 	translate([-s.x / 2, -s.y / 2, 0])
 	cube(s);
 }
@@ -51,7 +51,7 @@ module lid()
 {
 	color("red") 
 	translate([0, 0, outer.z + lid_gap]) 
-	rotate([0, 180, 0])
+	rotate([180, 0, 0])
 	tube(lid_height);
 }
 
