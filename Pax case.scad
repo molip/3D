@@ -30,21 +30,27 @@ module clip(height)
 	cube(s);
 }
 
-module tube(outer_height)
+module tube(outer_height, is_inner)
 {
+	offset = is_inner ? 0 : wall;
+	translate = is_inner ? base : 0;
+	h = wall + outer_height + lid_height_delta / 2;
 	difference()
 	{
-		h = wall + outer_height + lid_height_delta / 2;
-		linear_extrude(h) offset(r=wall) outline();
-		translate([0, 0, base]) linear_extrude(h) outline();
-		clip(outer_height);
+		translate([0, 0, translate]) linear_extrude(h) offset(r=offset) outline();
+		if (!is_inner)
+			clip(outer_height);
 	}
 }
 
 module body()
 {
 	color("yellow") 
-	tube(outer.z - lid_height);
+	difference()
+	{
+		tube(outer.z - lid_height, false);
+		tube(outer.z - lid_height, true);
+	}
 }
 
 module lid()
@@ -52,7 +58,11 @@ module lid()
 	color("red") 
 	translate([0, 0, outer.z + lid_gap]) 
 	rotate([180, 0, 0])
-	tube(lid_height);
+	difference()
+	{
+		tube(lid_height, false);
+		tube(lid_height, true);
+	}
 }
 
 module main()
