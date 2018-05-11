@@ -1,18 +1,18 @@
-wall = 0.5;
-base = 1;
-inner = [31.5, 22.3, 60];
-lid_angle = 15;
-lid_gap = 5;
-lid_height = 8; // Outer height from top, x=0
+_wall = 0.5;
+_base = 1;
+_inner = [31.5, 22.3, 60];
+_lid_angle = 15;
+_lid_gap = 5;
+_lid_height = 8; // Outer height from top, y=0
 
-outer = [inner.x + wall * 2, inner.y + wall * 2, inner.z + base * 2];
-lid_height_delta = sin(lid_angle) * outer.y;
+_outer = [_inner.x + _wall * 2, _inner.y + _wall * 2, _inner.z + _base * 2];
+_lid_height_delta = sin(_lid_angle) * _outer.y;
 
 module outline() 
 {
 	data_extents = [[950.464, 897.76], [1323.82, 1159.95]];
 
-	scale([inner.x / (data_extents[1].x - data_extents[0].x), inner.y / (data_extents[1].y - data_extents[0].y)])
+	scale([_inner.x / (data_extents[1].x - data_extents[0].x), _inner.y / (data_extents[1].y - data_extents[0].y)])
 	translate([-data_extents[0].x, -data_extents[0].y])
 	translate([(data_extents[0].x - data_extents[1].x) / 2, (data_extents[0].y - data_extents[1].y) / 2])
 	polygon
@@ -23,22 +23,22 @@ module outline()
 
 module clip(height)
 {
-	s = [outer.x * 2, outer.y * 2, lid_height_delta * 2];
+	s = [_outer.x * 2, _outer.y * 2, _lid_height_delta * 2];
 	translate([0, 0, height])
-	rotate([lid_angle, 0, 0])
+	rotate([_lid_angle, 0, 0])
 	translate([-s.x / 2, -s.y / 2, 0])
 	cube(s);
 }
 
-module tube(outer_height, is_inner)
+module tube(outer_height, inner)
 {
-	offset = is_inner ? 0 : wall;
-	translate = is_inner ? base : 0;
-	h = wall + outer_height + lid_height_delta / 2;
+	offset = inner ? 0 : _wall;
+	translate = inner ? _base : 0;
+	h = _wall + outer_height + _lid_height_delta / 2;
 	difference()
 	{
 		translate([0, 0, translate]) linear_extrude(h) offset(r=offset) outline();
-		if (!is_inner)
+		if (!inner)
 			clip(outer_height);
 	}
 }
@@ -48,20 +48,20 @@ module body()
 	color("yellow") 
 	difference()
 	{
-		tube(outer.z - lid_height, false);
-		tube(outer.z - lid_height, true);
+		tube(_outer.z - _lid_height, false);
+		tube(_outer.z - _lid_height, true);
 	}
 }
 
 module lid()
 {
 	color("red") 
-	translate([0, 0, outer.z + lid_gap]) 
+	translate([0, 0, _outer.z + _lid_gap]) 
 	rotate([180, 0, 0])
 	difference()
 	{
-		tube(lid_height, false);
-		tube(lid_height, true);
+		tube(_lid_height, false);
+		tube(_lid_height, true);
 	}
 }
 
