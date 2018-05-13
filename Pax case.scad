@@ -152,4 +152,13 @@ module main()
 	mirror([1, 0, 0]) move_hinge() hinge();
 }
 
+module print()
+{
+	body();
+	translate([0, 30, 0]) lid();
+	translate([-8, -20, 0]) hinge();
+	translate([-8, -30, 0]) hinge();
+}
+
 main();
+//print();
