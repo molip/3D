@@ -1,12 +1,27 @@
-_wall = 0.5;
+$fs = 0.5;
+
+_wall = 1;
 _base = 1;
-_inner = [31.5, 22.3, 60];
-_lid_angle = 15;
-_lid_gap = 5;
+_inner = [31.5, 22.3, 28];
+_lid_angle = 26;
+_lid_gap = 0;
 _lid_height = 8; // Outer height from top, y=0
+_no_base = false;
+
+
+
+_hinge = [0, 0, 22]; // From top. x not used.
+_hinge_angle = 64;
+_hinge_boss_radius = 3.5;
+_hinge_hole_radius = 2;
 
 _outer = [_inner.x + _wall * 2, _inner.y + _wall * 2, _inner.z + _base * 2];
 _lid_height_delta = sin(_lid_angle) * _outer.y;
+
+module cylinder2(height, radius, center=false)
+{
+	cylinder(height, radius, radius, center);
+}
 
 module outline() 
 {
@@ -32,12 +47,13 @@ module clip(height)
 
 module tube(outer_height, inner)
 {
+	extend = (inner && _no_base) ? _base * 2 : 0;
 	offset = inner ? 0 : _wall;
-	translate = inner ? _base : 0;
-	h = _wall + outer_height + _lid_height_delta / 2;
+	bottom = inner ? _base - extend: 0;
+	h = _wall + outer_height + _lid_height_delta / 2 + extend;
 	difference()
 	{
-		translate([0, 0, translate]) linear_extrude(h) offset(r=offset) outline();
+		translate([0, 0, bottom]) linear_extrude(h) offset(r=offset) outline();
 		if (!inner)
 			clip(outer_height);
 	}
@@ -45,30 +61,95 @@ module tube(outer_height, inner)
 
 module body()
 {
+	module hole()
+	{
+		translate([0, _hinge.y, _outer.z - _hinge.z]) 
+		rotate([0, 90, 0])
+		cylinder2(_outer.x + 5, _hinge_hole_radius + 0.1, center = true);
+	}
+
 	color("yellow") 
 	difference()
 	{
 		tube(_outer.z - _lid_height, false);
 		tube(_outer.z - _lid_height, true);
+
+		hole();
+	}
+}
+
+module hinge()
+{
+	union()
+	{
+		length = _hinge.z - _lid_height / 2;
+		hull()
+		{
+			cylinder2(_wall, _hinge_boss_radius);
+			
+			translate([length, 0, 0])
+			cylinder2(_wall, _hinge_boss_radius);
+		}
+		
+		translate([length, 0, _wall])
+		cylinder2(_wall + 0.5, _hinge_hole_radius, _hinge_hole_radius);
 	}
 }
 
 module lid()
 {
-	color("red") 
-	translate([0, 0, _outer.z + _lid_gap]) 
-	rotate([180, 0, 0])
-	difference()
+	module boss()
 	{
-		tube(_lid_height, false);
-		tube(_lid_height, true);
+		translate([_outer.x / 2 - _wall, 0, _lid_height / 2]) 
+		rotate([0, 90, 0])
+		cylinder2(_wall, _hinge_boss_radius);
+	}
+
+	color("red") 
+	union()
+	{
+		difference()
+		{
+			tube(_lid_height, false);
+			tube(_lid_height, true);
+		}
+
+		boss();
+		mirror([1, 0, 0]) boss();
 	}
 }
 
 module main()
 {
+	module move_lid()
+	{
+		move_hinge_centre()
+		translate([0, -_hinge.y, _hinge.z + _lid_gap])	
+		rotate([180, 0, 0])
+		children();
+	}
+
+	module move_hinge_centre()
+	{
+		angle = _hinge_angle * $t;
+
+		translate([0, _hinge.y, _outer.z - _hinge.z])	
+		rotate([angle, 0, 0])	
+		children();
+	}
+
+	module move_hinge()
+	{
+		move_hinge_centre()
+		translate([_outer.x / 2 + _wall, 0, _hinge.z - _lid_height / 2]) 
+		rotate([180, 90, 0])
+		children();
+	}
+
 	body();
-	lid();
+	move_lid() lid();
+	move_hinge() hinge();
+	mirror([1, 0, 0]) move_hinge() hinge();
 }
 
 main();
