@@ -3,22 +3,20 @@ $fs = 0.5;
 _wall = 1;
 _base = 1;
 _dimensions = [31.5, 22.3, 33];
-_lid_angle = 26;
 _lid_gap = 0;
-_lid_height = 8; // Outer height from top, y=0
+_lid_height = 3; // Outer height from top, y=0
 _no_base = false;
 _flip = false;
 
-
-
-_hinge = [0, 0, 22]; // From top. x not used.
-_hinge_angle = 64;
+_hinge = [0, 0, 21]; // From top. x not used.
+_hinge_angle = 90;
 _hinge_boss_radius = 3.5;
 _hinge_hole_radius = 2;
 
+_clip_radius = _hinge.z - _lid_height;
+
 _inner = _flip ? [_dimensions.y, _dimensions.x, _dimensions.z] : _dimensions;
 _outer = [_inner.x + _wall * 2, _inner.y + _wall * 2, _inner.z + _base * 2];
-_lid_height_delta = sin(_lid_angle) * _outer.y;
 
 module cylinder2(height, radius, center=false)
 {
@@ -41,11 +39,11 @@ module outline()
 
 module clip(height)
 {
-	s = [_outer.x * 2, _outer.y * 2, _lid_height_delta * 2];
+	$fa = 1;
+
 	translate([0, 0, height])
-	rotate([_lid_angle, 0, 0])
-	translate([-s.x / 2, -s.y / 2, 0])
-	cube(s);
+	rotate([0, 90, 0])
+	cylinder(_outer.x + _wall * 2, _clip_radius, _clip_radius, center = true);
 }
 
 module tube(outer_height, inner)
@@ -53,13 +51,8 @@ module tube(outer_height, inner)
 	extend = (inner && _no_base) ? _base * 2 : 0;
 	offset = inner ? 0 : _wall;
 	bottom = inner ? _base - extend: 0;
-	h = _wall + outer_height + _lid_height_delta / 2 + extend;
-	difference()
-	{
-		translate([0, 0, bottom]) linear_extrude(h) offset(r=offset) outline();
-		if (!inner)
-			clip(outer_height);
-	}
+	h = outer_height + extend;
+	translate([0, 0, bottom]) linear_extrude(h) offset(r=offset) outline();
 }
 
 module body()
@@ -72,12 +65,22 @@ module body()
 	}
 
 	color("yellow") 
-	difference()
+	intersection()
 	{
-		tube(_outer.z - _lid_height, false);
-		tube(_outer.z - _lid_height, true);
-
-		hole();
+		difference()
+		{
+			tube(_outer.z, false);
+			tube(_outer.z, true);
+			hole();
+		}
+		
+		union()
+		{
+			translate([0, _hinge.y, 0]) 
+			clip(_outer.z - _hinge.z);
+			
+			cube([_outer.x, _outer.y, (_outer.z - _hinge.z) * 2], center = true);
+		}
 	}
 }
 
@@ -85,16 +88,16 @@ module hinge()
 {
 	union()
 	{
-		length = _hinge.z - _lid_height / 2;
-		hull()
+		union()
 		{
-			cylinder2(_wall, _hinge_boss_radius);
+			translate([0, -_hinge_boss_radius, 0])
+			cube([_hinge.z, _hinge_boss_radius * 2, _wall]);
 			
-			translate([length, 0, 0])
+			translate([_hinge.z, 0, 0])
 			cylinder2(_wall, _hinge_boss_radius);
 		}
 		
-		translate([length, 0, _wall])
+		translate([_hinge.z, 0, _wall])
 		cylinder2(_wall + 0.5, _hinge_hole_radius, _hinge_hole_radius);
 	}
 }
@@ -103,22 +106,27 @@ module lid()
 {
 	module boss()
 	{
-		translate([_outer.x / 2 - _wall, 0, _lid_height / 2]) 
-		rotate([0, 90, 0])
-		cylinder2(_wall, _hinge_boss_radius);
+		translate([_outer.x / 2 - _wall, -_hinge_boss_radius, 0]) 
+		cube([_wall, _hinge_boss_radius * 2, _hinge_boss_radius * 2]);
 	}
 
 	color("red") 
-	union()
+	difference()
 	{
-		difference()
+		union()
 		{
-			tube(_lid_height, false);
-			tube(_lid_height, true);
+			difference()
+			{
+				tube(_hinge.z, false);
+				tube(_hinge.z, true);
+			}
+
+			boss();
+			mirror([1, 0, 0]) boss();
 		}
 
-		boss();
-		mirror([1, 0, 0]) boss();
+		translate([0, -_hinge.y, 0]) 
+		clip(_hinge.z);
 	}
 }
 
@@ -144,7 +152,7 @@ module main()
 	module move_hinge()
 	{
 		move_hinge_centre()
-		translate([_outer.x / 2 + _wall, 0, _hinge.z - _lid_height / 2]) 
+		translate([_outer.x / 2 + _wall, 0, _hinge.z]) 
 		rotate([180, 90, 0])
 		children();
 	}
