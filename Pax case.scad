@@ -2,11 +2,12 @@ $fs = 0.5;
 
 _wall = 1;
 _base = 1;
-_inner = [31.5, 22.3, 28];
+_dimensions = [31.5, 22.3, 33];
 _lid_angle = 26;
 _lid_gap = 0;
 _lid_height = 8; // Outer height from top, y=0
 _no_base = false;
+_flip = false;
 
 
 
@@ -15,6 +16,7 @@ _hinge_angle = 64;
 _hinge_boss_radius = 3.5;
 _hinge_hole_radius = 2;
 
+_inner = _flip ? [_dimensions.y, _dimensions.x, _dimensions.z] : _dimensions;
 _outer = [_inner.x + _wall * 2, _inner.y + _wall * 2, _inner.z + _base * 2];
 _lid_height_delta = sin(_lid_angle) * _outer.y;
 
@@ -27,7 +29,8 @@ module outline()
 {
 	data_extents = [[950.464, 897.76], [1323.82, 1159.95]];
 
-	scale([_inner.x / (data_extents[1].x - data_extents[0].x), _inner.y / (data_extents[1].y - data_extents[0].y)])
+	rotate([0, 0, _flip ? 90 : 0])
+	scale([_dimensions.x / (data_extents[1].x - data_extents[0].x), _dimensions.y / (data_extents[1].y - data_extents[0].y)])
 	translate([-data_extents[0].x, -data_extents[0].y])
 	translate([(data_extents[0].x - data_extents[1].x) / 2, (data_extents[0].y - data_extents[1].y) / 2])
 	polygon
