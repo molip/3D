@@ -48,18 +48,15 @@ module clip(height)
 	cube(s);
 }
 
-module tube(outer_height, inner)
+module inner_tube()
 {
-	extend = (inner && _no_base) ? _base * 2 : 0;
-	offset = inner ? 0 : _wall;
-	bottom = inner ? _base - extend: 0;
-	h = _wall + outer_height + _lid_height_delta / 2 + extend;
-	difference()
-	{
-		translate([0, 0, bottom]) linear_extrude(h) offset(r=offset) outline();
-		if (!inner)
-			clip(outer_height);
-	}
+	translate([0, 0, _no_base ? -_base : _base]) linear_extrude(_outer.z + _base * 2) outline();
+}
+
+module outer_tube(outer_height)
+{
+	h = _wall + outer_height + _lid_height_delta / 2;
+	linear_extrude(h) offset(r=_wall) outline();
 }
 
 module body()
@@ -74,9 +71,9 @@ module body()
 	color("yellow") 
 	difference()
 	{
-		tube(_outer.z - _lid_height, false);
-		tube(_outer.z - _lid_height, true);
-
+		outer_tube(_outer.z - _lid_height);
+		inner_tube();
+		clip(_outer.z - _lid_height);
 		hole();
 	}
 }
@@ -113,8 +110,9 @@ module lid()
 	{
 		difference()
 		{
-			tube(_lid_height, false);
-			tube(_lid_height, true);
+			outer_tube(_lid_height);
+			inner_tube();
+			rotate([0, 0, 180]) clip(_lid_height);
 		}
 
 		boss();
@@ -128,7 +126,7 @@ module main()
 	{
 		move_hinge_centre()
 		translate([0, -_hinge.y, _hinge.z + _lid_gap])	
-		rotate([180, 0, 0])
+		rotate([0, 180, 0])
 		children();
 	}
 
