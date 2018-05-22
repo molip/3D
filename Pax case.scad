@@ -3,22 +3,10 @@ $fs = 0.5;
 _wall = 1;
 _base = 1;
 _dimensions = [31.5, 22.3, 33];
-_lid_angle = 26;
-_lid_gap = 0;
-_lid_height = 8; // Outer height from top, y=0
 _no_base = false;
-_flip = false;
 
-
-
-_hinge = [0, 0, 22]; // From top. x not used.
-_hinge_angle = 64;
-_hinge_boss_radius = 3.5;
-_hinge_hole_radius = 2;
-
-_inner = _flip ? [_dimensions.y, _dimensions.x, _dimensions.z] : _dimensions;
+_inner = [_dimensions.y, _dimensions.x, _dimensions.z];
 _outer = [_inner.x + _wall * 2, _inner.y + _wall * 2, _inner.z + _base * 2];
-_lid_height_delta = sin(_lid_angle) * _outer.y;
 
 module cylinder2(height, radius, center=false)
 {
@@ -29,7 +17,7 @@ module outline()
 {
 	data_extents = [[950.464, 897.76], [1323.82, 1159.95]];
 
-	rotate([0, 0, _flip ? 90 : 0])
+	rotate([0, 0, 90])
 	scale([_dimensions.x / (data_extents[1].x - data_extents[0].x), _dimensions.y / (data_extents[1].y - data_extents[0].y)])
 	translate([-data_extents[0].x, -data_extents[0].y])
 	translate([(data_extents[0].x - data_extents[1].x) / 2, (data_extents[0].y - data_extents[1].y) / 2])
@@ -39,126 +27,74 @@ module outline()
 	]);
 }
 
-module clip(height)
+module clip()
 {
-	s = [_outer.x * 2, _outer.y * 2, _lid_height_delta * 2];
-	translate([0, 0, height])
-	rotate([_lid_angle, 0, 0])
-	translate([-s.x / 2, -s.y / 2, 0])
+	s = [_outer.x / 2 + 1, _outer.y + 1, _outer.z + 2];
+	translate([0, -s.y / 2, -1])
 	cube(s);
 }
 
 module inner_tube()
 {
-	translate([0, 0, _no_base ? -_base : _base]) linear_extrude(_outer.z + _base * 2) outline();
+	translate([0, 0, _no_base ? -_base : _base]) linear_extrude(_outer.z + _base * (_no_base ? 2 : -2)) outline();
 }
 
-module outer_tube(outer_height)
+module outer_tube()
 {
-	h = _wall + outer_height + _lid_height_delta / 2;
-	linear_extrude(h) offset(r=_wall) outline();
+	linear_extrude(_outer.z) offset(r=_wall) outline();
 }
 
-module body()
+module lower_body()
 {
-	module hole()
-	{
-		translate([0, _hinge.y, _outer.z - _hinge.z]) 
-		rotate([0, 90, 0])
-		cylinder2(_outer.x + 5, _hinge_hole_radius + 0.1, center = true);
-	}
-
 	color("yellow") 
 	difference()
 	{
-		outer_tube(_outer.z - _lid_height);
+		outer_tube();
 		inner_tube();
-		clip(_outer.z - _lid_height);
-		hole();
+		mirror([1, 0, 0]) clip();
 	}
 }
 
-module hinge()
+module upper_body()
 {
-	union()
+	color("gray") 
+	difference()
 	{
-		length = _hinge.z - _lid_height / 2;
-		hull()
-		{
-			cylinder2(_wall, _hinge_boss_radius);
-			
-			translate([length, 0, 0])
-			cylinder2(_wall, _hinge_boss_radius);
-		}
-		
-		translate([length, 0, _wall])
-		cylinder2(_wall + 0.5, _hinge_hole_radius, _hinge_hole_radius);
-	}
-}
-
-module lid()
-{
-	module boss()
-	{
-		translate([_outer.x / 2 - _wall, 0, _lid_height / 2]) 
-		rotate([0, 90, 0])
-		cylinder2(_wall, _hinge_boss_radius);
-	}
-
-	color("red") 
-	union()
-	{
-		difference()
-		{
-			outer_tube(_lid_height);
-			inner_tube();
-			rotate([0, 0, 180]) clip(_lid_height);
-		}
-
-		boss();
-		mirror([1, 0, 0]) boss();
+		outer_tube();
+		inner_tube();
+		clip();
 	}
 }
 
 module main()
 {
-	module move_lid()
-	{
-		move_hinge_centre()
-		translate([0, -_hinge.y, _hinge.z + _lid_gap])	
-		rotate([0, 180, 0])
-		children();
-	}
-
-	module move_hinge_centre()
-	{
-		angle = _hinge_angle * $t;
-
-		translate([0, _hinge.y, _outer.z - _hinge.z])	
-		rotate([angle, 0, 0])	
-		children();
-	}
-
 	module move_hinge()
 	{
-		move_hinge_centre()
-		translate([_outer.x / 2 + _wall, 0, _hinge.z - _lid_height / 2]) 
-		rotate([180, 90, 0])
+		//angle = 90 * $t;
+		angle = 45;
+
+		offset = [0, _outer.y / 2, _outer.x / 2];
+		translate(offset) 
+		rotate([-angle, 0, 0]) 
+		translate(-offset) 
 		children();
 	}
 
-	body();
-	move_lid() lid();
-	move_hinge() hinge();
-	mirror([1, 0, 0]) move_hinge() hinge();
+	module move_body()
+	{
+		rotate([0, 90, 0]) 
+		translate([-_outer.x / 2, 0, -_outer.z / 2]) 
+		children();
+	}
+
+	move_body() lower_body();
+	move_hinge() move_body() upper_body();
 }
 
 module print()
 {
-	body();
-	translate([0, 30, 0]) lid();
-	translate([-8, -20, 0]) hinge();
-	translate([-8, -30, 0]) hinge();
+	lower_body();
+	translate([30, 0, 0]) upper_body();
 }
 
 main();
