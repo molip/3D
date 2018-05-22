@@ -1,17 +1,17 @@
-$fs = 0.5;
+$fs = 0.3;
 
 _wall = 1;
 _base = 1;
-_dimensions = [31.5, 22.3, 33];
-_no_base = false;
+_dimensions = [31.5, 22.3, 30];
 
 _hinge_radius = 2;
 _hinge_inner_radius = 0.85;
-_hinge_thickness = 4;
+_hinge_thickness = 5;
 
 _magnet_diam = 3.1;
 _magnet_height = 2.1;
-_magnet_wall = 0.3;
+_magnet_wall_x = 0.5;
+_magnet_wall_y = 0.7;
 _magnet_inset = 8;
 
 _inner = [_dimensions.y, _dimensions.x, _dimensions.z];
@@ -38,14 +38,14 @@ module outline()
 
 module clip()
 {
-	s = [_outer.x / 2 + 1, _outer.y + _magnet_diam + 2, _outer.z + 2];
-	translate([0, -s.y / 2, -1])
+	s = [_outer.x / 2 + 1, _outer.y + _magnet_diam + 5, _outer.z + 2];
+	translate([-s.x, -s.y / 2, -1])
 	cube(s);
 }
 
 module inner_tube()
 {
-	translate([0, 0, _no_base ? -_base : _base]) linear_extrude(_outer.z + _base * (_no_base ? 2 : -2)) outline();
+	translate([0, 0, _base]) linear_extrude(_outer.z + _base) outline();
 }
 
 module outer_tube()
@@ -74,7 +74,7 @@ module body(hinge_inset)
 {
 	module slot(z)
 	{
-		translate([_magnet_wall, -_outer.y / 2 - _magnet_diam + _wall, z - _magnet_diam / 2])
+		translate([_magnet_wall_x, -_inner.y / 2 - _magnet_diam, z - _magnet_diam / 2])
 		cube([_magnet_height, _magnet_diam + 1, _magnet_diam]);
 	}
 
@@ -87,10 +87,10 @@ module body(hinge_inset)
 				union()
 				{
 					outer_tube();
-					translate([0, -_magnet_diam - _magnet_wall + _wall, 0]) outer_tube();
+					translate([0, -_magnet_diam - _magnet_wall_y + _wall, 0]) outer_tube();
 				}
-					
-				mirror([1, 0, 0]) clip();
+
+				clip();
 			}
 			hinge(hinge_inset);
 			hinge(_outer.z - _hinge_thickness - hinge_inset);
@@ -98,6 +98,23 @@ module body(hinge_inset)
 		inner_tube();
 		slot(_magnet_inset);
 		slot(_outer.z - _magnet_inset);
+		
+		translate([0, 0, _outer.z - _base / 2]) 
+		linear_extrude(_base) offset(r=_wall / 2) outline();
+	}
+}
+
+module end_cap()
+{
+	color("green")
+	difference()
+	{
+		union()
+		{
+			linear_extrude(_base / 2) offset(r = _wall / 2) outline();
+			linear_extrude(_base) outline();
+		}
+		clip();
 	}
 }
 
@@ -135,14 +152,32 @@ module main()
 		children();
 	}
 
-	move_body() lower_body();
-	move_hinge() move_body() upper_body();
+	module move_end_cap()
+	{
+		translate([0, 0, _outer.z]) 
+		mirror([0, 0, 1]) 
+		children();
+	}
+	
+	move_body() 
+	{
+		lower_body();
+		move_end_cap() end_cap();
+	}
+	
+	move_hinge() move_body() 
+	{
+		upper_body();
+		mirror([1, 0, 0]) move_end_cap() end_cap(); 
+	}
 }
 
 module print()
 {
 	lower_body();
 	translate([30, 0, 0]) upper_body();
+	translate([0, 40, 0]) end_cap();
+	translate([20, 40, 0]) end_cap();
 }
 
 //main();
