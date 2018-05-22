@@ -5,6 +5,10 @@ _base = 1;
 _dimensions = [31.5, 22.3, 33];
 _no_base = false;
 
+_hinge_radius = 2;
+_hinge_inner_radius = 1;
+_hinge_thickness = 4;
+
 _inner = [_dimensions.y, _dimensions.x, _dimensions.z];
 _outer = [_inner.x + _wall * 2, _inner.y + _wall * 2, _inner.z + _base * 2];
 
@@ -44,26 +48,52 @@ module outer_tube()
 	linear_extrude(_outer.z) offset(r=_wall) outline();
 }
 
+module hinge(z)
+{
+	translate([0, _outer.y / 2, z])
+	{
+		difference()
+		{
+			union()
+			{
+				translate([0, -2, 0]) cube([_hinge_radius, _hinge_radius + 2, _hinge_thickness]);
+				translate([0, _hinge_radius, 0]) cylinder2(_hinge_thickness, _hinge_radius);
+			}
+
+			translate([0, _hinge_radius, -1]) cylinder2(_hinge_thickness + 2, _hinge_inner_radius);
+		}
+	}
+}
+
+module body(hinge_inset)
+{
+	difference()
+	{
+		union()
+		{
+			difference()
+			{
+				outer_tube();
+				mirror([1, 0, 0]) clip();
+			}
+			hinge(_hinge_thickness * hinge_inset);
+			hinge(_outer.z - _hinge_thickness * (hinge_inset + 1));
+		}
+		inner_tube();
+	}
+}
+
 module lower_body()
 {
 	color("yellow") 
-	difference()
-	{
-		outer_tube();
-		inner_tube();
-		mirror([1, 0, 0]) clip();
-	}
+	body(0);
 }
 
 module upper_body()
 {
 	color("gray") 
-	difference()
-	{
-		outer_tube();
-		inner_tube();
-		clip();
-	}
+	mirror([1, 0, 0])
+	body(1);
 }
 
 module main()
@@ -73,7 +103,7 @@ module main()
 		//angle = 90 * $t;
 		angle = 45;
 
-		offset = [0, _outer.y / 2, _outer.x / 2];
+		offset = [0, _outer.y / 2 + _hinge_radius, _outer.x / 2];
 		translate(offset) 
 		rotate([-angle, 0, 0]) 
 		translate(-offset) 
