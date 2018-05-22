@@ -6,8 +6,14 @@ _dimensions = [31.5, 22.3, 33];
 _no_base = false;
 
 _hinge_radius = 2;
-_hinge_inner_radius = 1;
+_hinge_inner_radius = 0.85;
 _hinge_thickness = 4;
+
+_magnet_diam = 3.1;
+_magnet_height = 2.1;
+_magnet_wall_x = 0.5;
+_magnet_wall_y = 0.7;
+_magnet_inset = 8;
 
 _inner = [_dimensions.y, _dimensions.x, _dimensions.z];
 _outer = [_inner.x + _wall * 2, _inner.y + _wall * 2, _inner.z + _base * 2];
@@ -33,8 +39,8 @@ module outline()
 
 module clip()
 {
-	s = [_outer.x / 2 + 1, _outer.y + 1, _outer.z + 2];
-	translate([0, -s.y / 2, -1])
+	s = [_outer.x / 2 + 1, _outer.y + _magnet_diam * 2 + 1, _outer.z + 2];
+	translate([-s.x, -s.y / 2, -1])
 	cube(s);
 }
 
@@ -67,19 +73,32 @@ module hinge(z)
 
 module body(hinge_inset)
 {
+	module slot(z)
+	{
+		translate([_magnet_wall_x, -_inner.y / 2 - _magnet_diam, z - _magnet_diam / 2])
+		cube([_magnet_height, _magnet_diam + 1, _magnet_diam]);
+	}
+
 	difference()
 	{
 		union()
 		{
 			difference()
 			{
-				outer_tube();
-				mirror([1, 0, 0]) clip();
+				union()
+				{
+					outer_tube();
+					translate([0, -_magnet_diam - _magnet_wall_y + _wall, 0]) outer_tube();
+				}
+
+				clip();
 			}
-			hinge(_hinge_thickness * hinge_inset);
-			hinge(_outer.z - _hinge_thickness * (hinge_inset + 1));
+			hinge(hinge_inset);
+			hinge(_outer.z - _hinge_thickness - hinge_inset);
 		}
 		inner_tube();
+		slot(_magnet_inset);
+		slot(_outer.z - _magnet_inset);
 	}
 }
 
@@ -93,7 +112,7 @@ module upper_body()
 {
 	color("gray") 
 	mirror([1, 0, 0])
-	body(1);
+	body(_hinge_thickness + 0.1);
 }
 
 module main()
