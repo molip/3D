@@ -89,7 +89,14 @@ module body(hinge_inset)
 				union()
 				{
 					outer_tube();
-					translate([0, -_magnet_diam - _magnet_wall_y + _wall, 0]) outer_tube();
+					translate([0, -_magnet_diam - _magnet_wall_y + _wall, 0]) 
+					{
+						outer_tube();
+						
+						offset = hinge_inset ? 3 : -3;
+						translate([1, -_outer.y / 2, _outer.z / 2 + offset])
+						cylinder2(6, 1, true);
+					}
 				}
 
 				clip();
