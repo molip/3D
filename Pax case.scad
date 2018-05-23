@@ -1,18 +1,18 @@
-$fs = 0.5;
+$fs = 0.3;
 
-_wall = 1;
-_base = 1;
-_dimensions = [31.5, 22.3, 33];
+_wall = 2;
+_base = 2;
+_dimensions = [31.5, 22.3, 30];
 _no_base = false;
 
 _hinge_radius = 2;
-_hinge_inner_radius = 0.85;
-_hinge_thickness = 4;
+_hinge_inner_radius = 0.85 + 0.15;
+_hinge_thickness = 5;
 
-_magnet_diam = 3.1;
-_magnet_height = 2.1;
-_magnet_wall_x = 0.5;
-_magnet_wall_y = 0.7;
+_magnet_diam = 3 + 0.3;
+_magnet_height = 2 + 0.3;
+_magnet_wall_x = 0.8;
+_magnet_wall_y = 1.1;
 _magnet_inset = 8;
 
 _inner = [_dimensions.y, _dimensions.x, _dimensions.z];
@@ -56,17 +56,18 @@ module outer_tube()
 
 module hinge(z)
 {
+	x_offset = 0.2;
 	translate([0, _outer.y / 2, z])
 	{
 		difference()
 		{
 			union()
 			{
-				translate([0, -2, 0]) cube([_hinge_radius, _hinge_radius + 2, _hinge_thickness]);
-				translate([0, _hinge_radius, 0]) cylinder2(_hinge_thickness, _hinge_radius);
+				translate([0, -2, 0]) cube([_hinge_radius - x_offset, _hinge_radius + 2, _hinge_thickness]);
+				translate([-x_offset, _hinge_radius, 0]) cylinder2(_hinge_thickness, _hinge_radius);
 			}
 
-			translate([0, _hinge_radius, -1]) cylinder2(_hinge_thickness + 2, _hinge_inner_radius);
+			translate([-x_offset, _hinge_radius, -1]) cylinder2(_hinge_thickness + 2, _hinge_inner_radius);
 		}
 	}
 }
@@ -112,7 +113,7 @@ module upper_body()
 {
 	color("gray") 
 	mirror([1, 0, 0])
-	body(_hinge_thickness + 0.1);
+	body(_hinge_thickness + 0.3);
 }
 
 module main()
