@@ -1,8 +1,9 @@
 $fs = 0.3;
 
 _wall = 2;
-_base = 2;
-_dimensions = [31.5, 22.3, 30];
+_base = 4;
+_dimensions = [31.2, 22.0, 105.5];
+//_dimensions = [31.2, 22.0, 50];
 _no_base = false;
 
 _hinge_radius = 2;
@@ -13,10 +14,28 @@ _magnet_diam = 3 + 0.3;
 _magnet_height = 2 + 0.3;
 _magnet_wall_x = 0.8;
 _magnet_wall_y = 1.1;
-_magnet_inset = 8;
+_magnet_inset = 12;
+
+_flange = [12, 8, 2];
+_flange_inner = 8;
 
 _inner = [_dimensions.y, _dimensions.x, _dimensions.z];
 _outer = [_inner.x + _wall * 2, _inner.y + _wall * 2, _inner.z + _base * 2];
+
+_upper_inset = _base + 0.2;
+
+module trapezium(width1, width2, height)
+{
+	inset = (width1 - width2) / 2;
+	polygon([[0, 0], [width1, 0], [width1 - inset, height], [inset, height]]);
+}
+
+module trapezoid_y(x1, x2, z, y)
+{
+	translate([0, 0, z])
+	rotate([-90, 0, 0])
+	linear_extrude(y) trapezium(x1, x2, z);
+}
 
 module cylinder2(height, radius, center=false)
 {
@@ -37,26 +56,27 @@ module outline()
 	]);
 }
 
-module clip()
+module clip(upper)
 {
-	s = [_outer.x / 2 + 1, _outer.y + _magnet_diam * 2 + 1, _outer.z + 2];
-	translate([-s.x, -s.y / 2, -1])
+	s = [_outer.x / 2 + 1, _outer.y + _magnet_diam * 2 + 1, _inner.z + (upper ? 2 : 0)];
+	translate([-s.x, -s.y / 2, upper ? -1 : _base])
 	cube(s);
 }
 
-module inner_tube()
+module inner_tube(upper)
 {
-	translate([0, 0, _no_base ? -_base : _base]) linear_extrude(_outer.z + _base * (_no_base ? 2 : -2)) outline();
+	translate([0, 0, upper ? -_base : _base]) linear_extrude(_outer.z + _base * (upper ? 2 : -2)) outline();
 }
 
-module outer_tube()
+module outer_tube(inset)
 {
-	linear_extrude(_outer.z) offset(r=_wall) outline();
+	translate(0, 0, inset)
+	linear_extrude(_outer.z - inset * 2) offset(r=_wall) outline();
 }
 
 module hinge(z)
 {
-	x_offset = 0.2;
+	x_offset = 0.1;
 	translate([0, _outer.y / 2, z])
 	{
 		difference()
@@ -72,8 +92,11 @@ module hinge(z)
 	}
 }
 
-module body(hinge_inset)
+module body(upper)
 {
+	inset = upper ? _upper_inset : 0;
+	hinge_inset = upper ? _hinge_thickness + 0.1 : 0;
+
 	module slot(z)
 	{
 		translate([_magnet_wall_x, -_inner.y / 2 - _magnet_diam, z - _magnet_diam / 2])
@@ -88,39 +111,78 @@ module body(hinge_inset)
 			{
 				union()
 				{
-					outer_tube();
+					outer_tube(inset);
 					translate([0, -_magnet_diam - _magnet_wall_y + _wall, 0]) 
 					{
-						outer_tube();
+						outer_tube(inset);
 						
-						offset = hinge_inset ? 3 : -3;
-						translate([1, -_outer.y / 2, _outer.z / 2 + offset])
-						cylinder2(6, 1, true);
+						if (upper)
+							translate([1, -_outer.y / 2, _inner.z / 2]) cylinder2(30, 1, true);
 					}
 				}
 
-				clip();
+				clip(upper);
 			}
-			hinge(hinge_inset);
-			hinge(_outer.z - _hinge_thickness - hinge_inset);
+			
+			hinge_centres = _outer.z - _hinge_thickness ;
+			hinge(hinge_inset - inset + _base);
+			hinge(hinge_centres / 3 +  hinge_inset - inset);
+			hinge(_outer.z - _hinge_thickness - hinge_centres / 3 - hinge_inset - inset);
+			hinge(_outer.z - _hinge_thickness - hinge_inset - inset - _base);
 		}
-		inner_tube();
-		slot(_magnet_inset);
-		slot(_outer.z - _magnet_inset);
+		inner_tube(upper);
+		slot(_magnet_inset - inset);
+		slot(_outer.z - inset - _magnet_inset);
+		slot(_outer.z / 2 - inset);
+		
+		mirror([0, 0, 1])
+		flange_female();
+
+		translate([0, 0, _outer.z])
+		flange_female();
 	}
 }
 
 module lower_body()
 {
 	color("yellow") 
-	body(0);
+	body(false);
 }
 
 module upper_body()
 {
 	color("gray") 
 	mirror([1, 0, 0])
-	body(_hinge_thickness + 0.3);
+	body(true);
+}
+
+module flange_male()
+{
+	union()
+	{
+		linear_extrude(_base - 1) offset(r = _wall) outline();
+		
+		color("blue")
+		translate([-_flange.x / 2, -_flange.y / 2, base - 1])
+		trapezoid_y(_flange.x, _flange_inner, _flange.z, _flange.y);
+	}
+}
+
+module flange_female() // -z from surface.
+{
+	gap = [0.1, 0.1, 0];
+	hole = _flange + gap;
+	hole_inner = _flange_inner + gap.x;
+
+	translate([-hole.x / 2, -hole.y / 2, 0])
+	mirror([0, 0, 1])
+	trapezoid_y(hole.x, hole_inner, hole.z, hole.y);
+
+	translate([-hole_inner / 2, -hole.y / 2, 0])
+	cube([hole_inner, hole.y, hole.z + 1]);
+	
+	translate([-hole.x / 2, -hole.y * 3 / 2, - hole.z])
+	cube([hole.x, hole.y, hole.z + 1]);
 }
 
 module main()
@@ -145,7 +207,7 @@ module main()
 	}
 
 	move_body() lower_body();
-	move_hinge() move_body() upper_body();
+	move_hinge() move_body() translate([0, 0, _upper_inset]) upper_body();
 }
 
 module print()
