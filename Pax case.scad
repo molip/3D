@@ -103,6 +103,14 @@ module body(upper)
 		cube([_magnet_height, _magnet_diam + 1, _magnet_diam]);
 	}
 
+	tube_y_offset = -_magnet_diam - _magnet_wall_y + _wall;
+	
+	module groove(x, y)
+	{
+		translate([x, y + tube_y_offset -_outer.y / 2, _outer.z / 2 - inset]) 
+		cylinder2(_inner.z - 10, 0.5, true);
+	}
+
 	difference()
 	{
 		union()
@@ -112,13 +120,9 @@ module body(upper)
 				union()
 				{
 					outer_tube(inset);
-					translate([0, -_magnet_diam - _magnet_wall_y + _wall, 0]) 
-					{
-						outer_tube(inset);
-						
-						if (upper)
-							translate([1, -_outer.y / 2, _inner.z / 2]) cylinder2(30, 1, true);
-					}
+					
+					translate([0, tube_y_offset, 0]) 
+					outer_tube(inset);
 				}
 
 				clip(upper);
@@ -135,6 +139,10 @@ module body(upper)
 		slot(_outer.z - inset - _magnet_inset);
 		slot(_outer.z / 2 - inset);
 		
+		groove(2.5, 0.05);
+		groove(4, 0.35);
+		groove(5.5, 0.8);
+
 		mirror([0, 0, 1])
 		flange_female();
 
