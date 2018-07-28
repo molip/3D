@@ -23,8 +23,8 @@ module body_outline()
 
 module head_outline()
 {
-	neck_length = 10;
-	head_rad = 6.5;
+	neck_length = 11;
+	head_rad = 8.5;
 
 	module neck() translate([0, -neck_length / 2 - 1, 0]) square([6.7, neck_length + 2], center=true);
 
@@ -32,8 +32,8 @@ module head_outline()
 	{
 		difference()
 		{
-			translate([0, 6.2 - head_rad, 0]) circle(head_rad - 2);
-			translate([0, -neck_length / 2 + 1.8, 0]) square([20, 10], center=true);
+			translate([0, 6.2 - head_rad, 0]) circle(head_rad - 2.5);
+			translate([0, -neck_length / 2 + 1.6, 0]) square([20, 10], center=true);
 		}
 	}
 	
@@ -47,7 +47,7 @@ module head_outline()
 			difference()
 			{
 				translate([0, 6.2 - head_rad, 0]) circle(head_rad);
-				translate([0, -neck_length / 2, 0]) square([20, 10], center=true);
+				translate([0, -neck_length / 2 - 1, 0]) square([20, 10], center=true);
 
 				head_inner();
 			}
