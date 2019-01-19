@@ -51,7 +51,7 @@ module lid(wall_extra = 0)
 	difference()
 	{
 		shape(base_diam);
-		translate([0, 0, -base]) shape(base_diam - (lid_wall - wall_extra) * 2, 0.86);
+		translate([0, 0, -base]) shape(base_diam - (lid_wall + wall_extra) * 2, 0.86);
 	}
 }
 
