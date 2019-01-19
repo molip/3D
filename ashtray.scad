@@ -3,7 +3,7 @@ $fs = 0.1;
 base_diam = 80;
 base = 1;
 body_wall = 4.8;
-body_height = 13;
+body_height = 18;
 
 lid_wall = 2.4;
 lid_height = 8;
@@ -14,6 +14,8 @@ bevel_inset = 4;
 
 lip_height = 3;
 lip_tol = 0.2;
+
+hole_diam = 50;
 
 module shape(diam, height, bevel_scale)
 {
@@ -31,21 +33,35 @@ module body()
 	{
 		shape(base_diam, body_height, 1);
 		translate([0, 0, base]) shape(base_diam - body_wall * 2, body_height, 0.8);
-		translate([0, 0, body_height - lip_height]) lid(lip_tol);
+
+			translate([0, 0, body_height + lid_height - lip_height]) 
+		rotate([180, 0, 0])
+		lid(lip_tol);
 	}
 }
 
 module lid(wall_extra = 0)
 {
-	translate([0, 0, lid_height]) 
-	rotate([180, 0, 0])
+	module hole(diam)
+	{
+		translate([0, 0, lid_height - bevel_height]) 
+		rotate([180, 0, 0])
+		shape(diam, lid_height, 0.45);
+	}
+
 	difference()
 	{
 		shape(base_diam, lid_height, 1);
-		translate([0, 0, base]) shape(base_diam - (lid_wall + wall_extra) * 2, lid_height, 0.88);
+		translate([0, 0, 0.1]) hole(hole_diam);
+
+		difference()
+		{
+			translate([0, 0, base]) shape(base_diam - (lid_wall + wall_extra) * 2, lid_height, 0.88);
+			hole(hole_diam + 5);
+		}
 	}
 }
 
 body(); 
-//#translate([0, 0, body_height - lip_height]) lid();
-translate([base_diam, 0, 0]) lid();
+//#translate([0, 0, body_height + lid_height - lip_height]) rotate([180, 0, 0]) lid();
+translate([base_diam - 10, 0, 0]) lid();
