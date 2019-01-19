@@ -1,6 +1,6 @@
 $fs = 0.1;
 
-base_diam = 60;
+base_diam = 80;
 base = 1;
 body_wall = 4.8;
 body_height = 13;
@@ -8,7 +8,7 @@ body_height = 13;
 lid_wall = 2.4;
 lid_height = 8;
 
-bevel_rad = 8;
+bevel_rad = 14;
 bottom_bevel_height = 4;
 top_bevel_height = 4;
 bevel_inset = 4;
@@ -31,7 +31,7 @@ module body()
 	difference()
 	{
 		shape(base_diam);
-		translate([0, 0, base]) shape(base_diam - body_wall * 2, 0.68);
+		translate([0, 0, base]) shape(base_diam - body_wall * 2, 0.8);
 		translate([0, 0, body_height - lip_height]) lid(lip_tol);
 	}
 }
@@ -51,7 +51,7 @@ module lid(wall_extra = 0)
 	difference()
 	{
 		shape(base_diam);
-		translate([0, 0, -base]) shape(base_diam - (lid_wall + wall_extra) * 2, 0.86);
+		translate([0, 0, -base]) shape(base_diam - (lid_wall + wall_extra) * 2, 0.88);
 	}
 }
 
