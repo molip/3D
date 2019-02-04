@@ -1,20 +1,20 @@
 $fs = 0.1;
 
-_size = [200, 30];
+_size = [119, 30];
 _thickness = 3;
 _tube_thickness = 2;
 _bevel_height = 8; // Includes panel.
 
-_post_inner = 3;
+_post_inner = 2;
 _post_outer = 8;
-_post_height = 10;
+_post_inset = 6;
 
-_hmdi_size = [21.3, 11.8, 20];
+_hmdi_size = [21, 11.5, 20];
 _power_size = [19, 10];
 
 _power_hole_x = 26.6; // Distance between centres.
 
-use <util.scad>
+include <util.scad>
 
 module posts(x)
 {
@@ -22,13 +22,14 @@ module posts(x)
 	{
 		difference()
 		{
-			cylinder(d = _post_outer, h = _post_height);
-			cylinder(d = _post_inner, h = _post_height + 1);
+			h = _panel_screw_y - _thickness;
+			cylinder(d = _post_outer, h = h);
+			cylinder(d = _post_inner, h = h + 1);
 		}
 	}	
 
-	translate([x, _post_outer / 2, _thickness]) post();
-	translate([x, _size.y - _post_outer / 2, _thickness]) post();
+	for (y = [_panel_screw_z1, _panel_screw_z2])
+		translate([x, y, _thickness]) post();
 }	
 
 module hdmi(hole)
@@ -36,7 +37,7 @@ module hdmi(hole)
 	size = _hmdi_size;
 	hole_z = _bevel_height + 5;
 	boss_width = 5;
-	boss_height = 3;
+	boss_height = 4;
 
 	module shape(add)
 	{
@@ -69,18 +70,28 @@ module power(hole)
 		translate([x, 0, _thickness + (hole ? 2 : 0)]) cylinder(d = hole ? 2.5 : boss_width, h = _bevel_height - _thickness + boss_height);
 }	
 
-module objects(hole)
+module remote(hole)
 {
-	translate([30, 15, 0]) hdmi(hole);
-	translate([70, 15, 0]) power(hole);
-}
+	hole_size = [5, 5];
+	block_size = hole_size + [_bevel_height, _bevel_height];
+	gap = 8;
+
+	if (hole)
+	{
+		frustum(block_size.x, block_size.y, hole_size.x, hole_size.y, _bevel_height);
+		translate([0, 0, _bevel_height]) centred_cube([block_size.x - 4, block_size.y, gap]);
+	}
+	else
+		centred_cube([block_size.x, block_size.y, _bevel_height + gap + 2]);
+}	
 
 module panel()
 {
 	module objects(hole)
 	{
-		translate([30, 15, 0]) hdmi(hole);
-		translate([70, 15, 0]) power(hole);
+		translate([21 + _post_inset, 15, 0]) hdmi(hole);
+		translate([58 + _post_inset, 15, 0]) power(hole);
+		translate([87 + _post_inset, 15, 0]) remote(hole);
 	}
 
 	difference()
@@ -89,8 +100,7 @@ module panel()
 		{
 			cube([_size.x, _size.y, _thickness]);
 
-			posts(_post_outer / 2);
-			posts(_size.x / 2);
+			posts(_post_outer / 2 + _post_inset);
 			posts(_size.x - _post_outer / 2);
 			
 			objects(false);
@@ -105,9 +115,9 @@ module test()
 	intersection()
 	{
 		panel();
-		translate([10, 0, 0]) cube([80, 30, 50]);
+		translate([0, 0, 0]) cube([80, 30, 50]);
 	}
 }
 
-//panel();
-test();
+panel();
+//test();

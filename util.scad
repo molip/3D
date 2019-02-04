@@ -1,6 +1,10 @@
 _screw_post_dia = 10;
 _screw_post_height = 10;
 
+_panel_screw_z1 = 4;  // From bottom of panel.
+_panel_screw_z2 = 26;
+_panel_screw_y = 15; // From front of panel.
+
 module screwPost(hole)
 {
 	screw_slope_z = 2.8;
