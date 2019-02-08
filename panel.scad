@@ -1,35 +1,35 @@
 $fs = 0.1;
 
-_size = [119, 30];
-_thickness = 3;
-_tube_thickness = 2;
-_bevel_height = 8; // Includes panel.
+_size = [118, 30];
+_oldThickness = 3;
+_tube_thickness = 2.5;
+_bevel_height = 8;
 
 _post_inner = 2;
 _post_outer = 8;
 _post_inset = 6;
 
-_hmdi_size = [21, 11.5, 20];
+_hmdi_size = [21, 11.5, 15];
 _power_size = [19, 10];
-
+_power_boss_height = 3;
 _power_hole_x = 26.6; // Distance between centres.
+
+_thickness = _bevel_height + _power_boss_height;
+
 
 include <util.scad>
 
-module posts(x)
+module posts2(x, hole)
 {
-	module post()
-	{
-		difference()
-		{
-			h = _panel_screw_y - _thickness;
-			cylinder(d = _post_outer, h = h);
-			cylinder(d = _post_inner, h = h + 1);
-		}
-	}	
+	hole_depth = 12;
+	z = _panel_screw_y - hole_depth;
 
-	for (y = [_panel_screw_z1, _panel_screw_z2])
-		translate([x, y, _thickness]) post();
+	if (hole)
+		for (y = [_panel_screw_z1, _panel_screw_z2])
+			translate([x, y, z]) 
+				cylinder(d = _post_inner, h = hole_depth);
+	else
+		translate([x, 0, 0]) centred_cube_x([_post_outer, _size.y, _panel_screw_y ]);
 }	
 
 module hdmi(hole)
@@ -48,7 +48,7 @@ module hdmi(hole)
 	shape(hole ? 0 : _tube_thickness * 2);
 
 	if (hole)
-		translate([0, 0, hole_z]) rotate([-90, 0, 0]) cylinder(d = 2, h = size.y + 20, center = true);
+		translate([0, 0, hole_z]) rotate([-90, 0, 0]) cylinder(d = 2.2, h = size.y + 20, center = true);
 	else
 		centred_cube([boss_width, size.y + (_tube_thickness + boss_height) * 2, hole_z + boss_width / 2]);
 }	
@@ -58,6 +58,7 @@ module power(hole)
 	size = _power_size;
 	boss_width = 5;
 	boss_height = 3;
+	hole_depth = 5.5;
 
 	module shape(add)
 	{
@@ -66,20 +67,25 @@ module power(hole)
 
 	shape(hole ? 0 : _tube_thickness * 2);
 
-	for (x = [-_power_hole_x / 2, _power_hole_x / 2])
-		translate([x, 0, _thickness + (hole ? 2 : 0)]) cylinder(d = hole ? 2.5 : boss_width, h = _bevel_height - _thickness + boss_height);
+	if (hole)
+	{
+		translate([0, 0, _bevel_height]) centred_cube([20.5, _size.y, 10]);
+
+		for (x = [-_power_hole_x / 2, _power_hole_x / 2])
+			translate([x, 0, _thickness - hole_depth]) cylinder(d = 2.5, h = hole_depth);
+	}
 }	
 
 module remote(hole)
 {
 	hole_size = [5, 5];
 	block_size = hole_size + [_bevel_height, _bevel_height];
-	gap = 8;
+	gap = 6;
 
 	if (hole)
 	{
 		frustum(block_size.x, block_size.y, hole_size.x, hole_size.y, _bevel_height);
-		translate([0, 0, _bevel_height]) centred_cube([block_size.x - 4, block_size.y, gap]);
+		translate([0, 0, _bevel_height]) centred_cube([5.8, _size.y, gap]);
 	}
 	else
 		centred_cube([block_size.x, block_size.y, _bevel_height + gap + 2]);
@@ -94,18 +100,24 @@ module panel()
 		translate([87 + _post_inset, 15, 0]) remote(hole);
 	}
 
+	module posts(hole)
+	{
+		posts2(_post_outer / 2 + _post_inset, hole);
+		posts2(_size.x - _post_outer / 2, hole);
+	}
+
 	difference()
 	{
 		union()
 		{
 			cube([_size.x, _size.y, _thickness]);
 
-			posts(_post_outer / 2 + _post_inset);
-			posts(_size.x - _post_outer / 2);
 			
+			posts(false);
 			objects(false);
 		}
 
+		posts(true);
 		objects(true);
 	}
 }
