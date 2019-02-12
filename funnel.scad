@@ -1,12 +1,12 @@
 $fn=40;
 
-thickness = 1.5;
+thickness = 1.6;
 
 neck_dia = 19.5;
-neck_height = 4;
+neck_height = 5;
 
-body_height = 20;
-body_dia = 40;
+body_height = 30;
+body_dia = 50;
 
 difference()
 {
